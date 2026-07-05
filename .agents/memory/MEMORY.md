@@ -1,0 +1,2 @@
+- [Orval query param collision](orval-query-param-collision.md) — list endpoints with query params cause TS2308; remove params and filter client-side instead.
+- [Drizzle arithmetic updates](drizzle-arithmetic-updates.md) — use sql template literal, not sql.raw, for safe column arithmetic in .set().

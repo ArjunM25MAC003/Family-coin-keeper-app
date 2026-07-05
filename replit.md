@@ -1,10 +1,11 @@
-# [Project name]
+# KoinKart — Family Finance & Chores App
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A gamified family finance app for Indian families. Kids earn coins for chores, teens track UPI spending and savings goals, parents manage allowances and get AI spending insights with receipt scanning.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, served at /api)
+- `pnpm --filter @workspace/family-finance run dev` — run the React frontend (served at /)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -18,19 +19,32 @@ _Replace the heading above with the project's name, and this line with one sente
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
+- Frontend: React + Vite, TanStack Query, Wouter, Framer Motion, Recharts, Zustand, Tailwind CSS
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/db/src/schema/` — Drizzle table definitions (families, members, chores, transactions, expenses, savings, allowances, receipts, activity)
+- `artifacts/api-server/src/routes/` — Express route handlers (families, members, chores, transactions, expenses, savings, allowances, receipts, insights)
+- `artifacts/family-finance/src/` — React frontend with role-based routing (/parent, /teen, /kid)
+- `artifacts/family-finance/src/lib/store.ts` — Zustand store for auth (currentMemberId, familyId)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Role selection is persisted in localStorage via Zustand; no server-side auth for demo
+- Receipt scanning uses heuristic text parsing (real impl would use vision AI/document AI)
+- AI spending insights are computed server-side from real DB data (no external AI API needed)
+- Coin balance updates happen atomically on chore approval — transaction + activity event + streak increment in one Promise.all
+- Query params removed from list endpoints to avoid Orval TS2308 name collision; filtering done client-side
+- familyId = 1 is the Sharma family demo — hardcoded in the frontend
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Three role-tuned experiences in one app:
+- **Kid (Adi):** Gamified quest list, coin counter, streak flames, level/XP bar, savings jar
+- **Teen (Priya):** Wallet view, UPI spending tracker, savings goals with progress rings, receipt history
+- **Parent (Rahul):** Family dashboard, chore approval, expense analytics with charts, AI insights, allowance manager, receipt scanner
 
 ## User preferences
 
@@ -38,7 +52,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After any OpenAPI spec change, run codegen before touching frontend or backend types
+- Query params on list endpoints cause Orval TS2308 collision — avoid adding them; use path-based filtering instead
+- `pnpm --filter @workspace/family-finance run typecheck` requires `pnpm run typecheck:libs` first if lib/db schema changed
+- Use `sql` template literal from drizzle-orm for arithmetic updates (not `sql.raw`)
 
 ## Pointers
 

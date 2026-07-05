@@ -3,20 +3,37 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Family Finance & Chores API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: families
+    description: Family management
+  - name: members
+    description: Family members (parents, teens, kids)
+  - name: chores
+    description: Chores and task management
+  - name: transactions
+    description: Coin transactions
+  - name: expenses
+    description: Real money expenses
+  - name: savings
+    description: Savings goals
+  - name: allowances
+    description: Recurring allowances
+  - name: receipts
+    description: Receipt scanning and categorization
+  - name: insights
+    description: AI spending insights
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +41,1344 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Families ──────────────────────────────────────────────────────────────
+  /families:
+    post:
+      operationId: createFamily
+      tags: [families]
+      summary: Create a new family
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FamilyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+
+  /families/{familyId}:
+    get:
+      operationId: getFamily
+      tags: [families]
+      summary: Get family details
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "404":
+          description: Not found
+
+  /families/{familyId}/dashboard:
+    get:
+      operationId: getFamilyDashboard
+      tags: [families]
+      summary: Family overview — coin totals, pending chores, recent activity
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilyDashboard"
+
+  /families/{familyId}/activity:
+    get:
+      operationId: getFamilyActivity
+      tags: [families]
+      summary: Family-wide activity feed (latest 20 events)
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+
+  /families/{familyId}/leaderboard:
+    get:
+      operationId: getFamilyLeaderboard
+      tags: [families]
+      summary: Members ranked by coins earned this month
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  # ── Members ───────────────────────────────────────────────────────────────
+  /families/{familyId}/members:
+    get:
+      operationId: listMembers
+      tags: [members]
+      summary: List all family members
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+    post:
+      operationId: createMember
+      tags: [members]
+      summary: Add a member to the family
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+
+  /families/{familyId}/members/{memberId}:
+    get:
+      operationId: getMember
+      tags: [members]
+      summary: Get member details
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+    patch:
+      operationId: updateMember
+      tags: [members]
+      summary: Update member details
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+
+  /families/{familyId}/members/{memberId}/wallet:
+    get:
+      operationId: getMemberWallet
+      tags: [members]
+      summary: Coin balance + recent transactions for a member
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  # ── Chores ────────────────────────────────────────────────────────────────
+  /families/{familyId}/chores:
+    get:
+      operationId: listChores
+      tags: [chores]
+      summary: List all chores for a family
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Chore"
+    post:
+      operationId: createChore
+      tags: [chores]
+      summary: Create a new chore
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChoreInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chore"
+
+  /families/{familyId}/chores/{choreId}:
+    get:
+      operationId: getChore
+      tags: [chores]
+      summary: Get chore details
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: choreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chore"
+    patch:
+      operationId: updateChore
+      tags: [chores]
+      summary: Update chore (status, details)
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: choreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChoreUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chore"
+    delete:
+      operationId: deleteChore
+      tags: [chores]
+      summary: Delete a chore
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: choreId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Coin Transactions ──────────────────────────────────────────────────────
+  /families/{familyId}/transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List coin transactions for a family or member
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Award or deduct coins manually
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  # ── Real Money Expenses ───────────────────────────────────────────────────
+  /families/{familyId}/expenses:
+    get:
+      operationId: listExpenses
+      tags: [expenses]
+      summary: List money expenses for a family
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Expense"
+    post:
+      operationId: createExpense
+      tags: [expenses]
+      summary: Add a money expense manually
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+
+  /families/{familyId}/expenses/summary:
+    get:
+      operationId: getExpenseSummary
+      tags: [expenses]
+      summary: Spending summary by category for current month
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExpenseSummary"
+
+  # ── Savings Goals ─────────────────────────────────────────────────────────
+  /families/{familyId}/savings:
+    get:
+      operationId: listSavingsGoals
+      tags: [savings]
+      summary: List savings goals
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavingsGoal"
+    post:
+      operationId: createSavingsGoal
+      tags: [savings]
+      summary: Create a savings goal
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsGoalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsGoal"
+
+  /families/{familyId}/savings/{goalId}:
+    patch:
+      operationId: updateSavingsGoal
+      tags: [savings]
+      summary: Update a savings goal (progress, name)
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsGoalUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsGoal"
+    delete:
+      operationId: deleteSavingsGoal
+      tags: [savings]
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: goalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Allowances ────────────────────────────────────────────────────────────
+  /families/{familyId}/allowances:
+    get:
+      operationId: listAllowances
+      tags: [allowances]
+      summary: List allowances for a family
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Allowance"
+    post:
+      operationId: createAllowance
+      tags: [allowances]
+      summary: Create a recurring allowance for a member
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllowanceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allowance"
+
+  /families/{familyId}/allowances/{allowanceId}:
+    patch:
+      operationId: updateAllowance
+      tags: [allowances]
+      summary: Update an allowance
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: allowanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllowanceUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Allowance"
+    delete:
+      operationId: deleteAllowance
+      tags: [allowances]
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: allowanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Receipt Scanning ──────────────────────────────────────────────────────
+  /families/{familyId}/receipts:
+    get:
+      operationId: listReceipts
+      tags: [receipts]
+      summary: List scanned receipts
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Receipt"
+    post:
+      operationId: scanReceipt
+      tags: [receipts]
+      summary: Submit a receipt image for AI parsing and auto-categorization
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiptInput"
+      responses:
+        "201":
+          description: Parsed receipt with auto-categorized line items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receipt"
+
+  /families/{familyId}/receipts/{receiptId}:
+    get:
+      operationId: getReceipt
+      tags: [receipts]
+      summary: Get a scanned receipt
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: receiptId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receipt"
+
+  # ── AI Spending Insights ──────────────────────────────────────────────────
+  /families/{familyId}/insights:
+    get:
+      operationId: getSpendingInsights
+      tags: [insights]
+      summary: AI-generated spending insights and recommendations
+      parameters:
+        - name: familyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendingInsights"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── Family ──────────────────────────────────────────────────────────────
+    Family:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        subscriptionPlan:
+          type: string
+          enum: [free, basic, premium]
+        createdAt:
+          type: string
+          format: date-time
+
+    FamilyInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        avatarUrl:
+          type: string
+
+    FamilyDashboard:
+      type: object
+      required: [familyId, totalCoinsInCirculation, pendingChoresCount, completedChoresThisWeek, totalExpensesThisMonth, memberSummaries]
+      properties:
+        familyId:
+          type: integer
+        totalCoinsInCirculation:
+          type: integer
+        pendingChoresCount:
+          type: integer
+        completedChoresThisWeek:
+          type: integer
+        totalExpensesThisMonth:
+          type: number
+        memberSummaries:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberSummary"
+
+    MemberSummary:
+      type: object
+      required: [memberId, name, role, coinBalance, streak, completedChores]
+      properties:
+        memberId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+        coinBalance:
+          type: integer
+        streak:
+          type: integer
+        completedChores:
+          type: integer
+
+    ActivityEvent:
+      type: object
+      required: [id, type, description, memberName, occurredAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [chore_completed, chore_approved, coins_awarded, expense_added, receipt_scanned, goal_reached, allowance_paid]
+        description:
+          type: string
+        memberName:
+          type: string
+        memberAvatarUrl:
+          type: ["string", "null"]
+        coinsAmount:
+          type: ["integer", "null"]
+        occurredAt:
+          type: string
+          format: date-time
+
+    LeaderboardEntry:
+      type: object
+      required: [rank, memberId, name, role, coinsEarnedThisMonth, streak, level]
+      properties:
+        rank:
+          type: integer
+        memberId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+        coinsEarnedThisMonth:
+          type: integer
+        totalCoins:
+          type: integer
+        streak:
+          type: integer
+        level:
+          type: integer
+
+    # ── Member ───────────────────────────────────────────────────────────────
+    Member:
+      type: object
+      required: [id, familyId, name, role, coinBalance, streak, level, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [parent, teen, kid]
+        coinBalance:
+          type: integer
+        streak:
+          type: integer
+        level:
+          type: integer
+        upiId:
+          type: ["string", "null"]
+        age:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    MemberInput:
+      type: object
+      required: [name, role]
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [parent, teen, kid]
+        avatarUrl:
+          type: string
+        age:
+          type: integer
+        upiId:
+          type: string
+
+    MemberUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        avatarUrl:
+          type: string
+        upiId:
+          type: string
+        age:
+          type: integer
+
+    Wallet:
+      type: object
+      required: [memberId, name, coinBalance, streak, level, recentTransactions, savingsGoals]
+      properties:
+        memberId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        coinBalance:
+          type: integer
+        streak:
+          type: integer
+        level:
+          type: integer
+        coinsEarnedThisWeek:
+          type: integer
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        savingsGoals:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavingsGoal"
+
+    # ── Chore ────────────────────────────────────────────────────────────────
+    Chore:
+      type: object
+      required: [id, familyId, title, coinReward, status, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        coinReward:
+          type: integer
+        status:
+          type: string
+          enum: [pending, completed, approved, rejected]
+        assigneeId:
+          type: ["integer", "null"]
+        assigneeName:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          format: date
+        isRecurring:
+          type: boolean
+        recurringFrequency:
+          type: ["string", "null"]
+          enum: [daily, weekly, monthly, null]
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ChoreInput:
+      type: object
+      required: [title, coinReward]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        coinReward:
+          type: integer
+        assigneeId:
+          type: integer
+        dueDate:
+          type: string
+          format: date
+        isRecurring:
+          type: boolean
+        recurringFrequency:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    ChoreUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        coinReward:
+          type: integer
+        status:
+          type: string
+          enum: [pending, completed, approved, rejected]
+        assigneeId:
+          type: integer
+        dueDate:
+          type: string
+          format: date
+
+    # ── Transaction ──────────────────────────────────────────────────────────
+    Transaction:
+      type: object
+      required: [id, familyId, memberId, memberName, type, amount, description, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        memberId:
+          type: integer
+        memberName:
+          type: string
+        type:
+          type: string
+          enum: [earned, spent, allowance, bonus, deducted]
+        amount:
+          type: integer
+        description:
+          type: string
+        choreId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    TransactionInput:
+      type: object
+      required: [memberId, type, amount, description]
+      properties:
+        memberId:
+          type: integer
+        type:
+          type: string
+          enum: [earned, spent, allowance, bonus, deducted]
+        amount:
+          type: integer
+        description:
+          type: string
+        choreId:
+          type: integer
+
+    # ── Expense ──────────────────────────────────────────────────────────────
+    Expense:
+      type: object
+      required: [id, familyId, memberId, memberName, amount, currency, category, description, date, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        memberId:
+          type: integer
+        memberName:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          default: INR
+        category:
+          type: string
+          enum: [groceries, food, transport, utilities, education, entertainment, clothing, health, other]
+        description:
+          type: string
+        receiptId:
+          type: ["integer", "null"]
+        date:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    ExpenseInput:
+      type: object
+      required: [memberId, amount, category, description, date]
+      properties:
+        memberId:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: string
+          default: INR
+        category:
+          type: string
+          enum: [groceries, food, transport, utilities, education, entertainment, clothing, health, other]
+        description:
+          type: string
+        date:
+          type: string
+          format: date
+
+    ExpenseSummary:
+      type: object
+      required: [familyId, month, totalSpent, byCategory, byMember]
+      properties:
+        familyId:
+          type: integer
+        month:
+          type: string
+        totalSpent:
+          type: number
+        byCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryBreakdown"
+        byMember:
+          type: array
+          items:
+            $ref: "#/components/schemas/MemberSpend"
+
+    CategoryBreakdown:
+      type: object
+      required: [category, amount, percentage]
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+        percentage:
+          type: number
+        count:
+          type: integer
+
+    MemberSpend:
+      type: object
+      required: [memberId, name, amount]
+      properties:
+        memberId:
+          type: integer
+        name:
+          type: string
+        amount:
+          type: number
+
+    # ── Savings Goal ──────────────────────────────────────────────────────────
+    SavingsGoal:
+      type: object
+      required: [id, familyId, memberId, memberName, name, targetCoins, currentCoins, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        memberId:
+          type: integer
+        memberName:
+          type: string
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        targetCoins:
+          type: integer
+        currentCoins:
+          type: integer
+        isCompleted:
+          type: boolean
+        targetDate:
+          type: ["string", "null"]
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    SavingsGoalInput:
+      type: object
+      required: [memberId, name, targetCoins]
+      properties:
+        memberId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        targetCoins:
+          type: integer
+        targetDate:
+          type: string
+          format: date
+
+    SavingsGoalUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        targetCoins:
+          type: integer
+        currentCoins:
+          type: integer
+        targetDate:
+          type: string
+          format: date
+
+    # ── Allowance ─────────────────────────────────────────────────────────────
+    Allowance:
+      type: object
+      required: [id, familyId, memberId, memberName, coinAmount, frequency, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        memberId:
+          type: integer
+        memberName:
+          type: string
+        coinAmount:
+          type: integer
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        isActive:
+          type: boolean
+        nextPayDate:
+          type: ["string", "null"]
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+
+    AllowanceInput:
+      type: object
+      required: [memberId, coinAmount, frequency]
+      properties:
+        memberId:
+          type: integer
+        coinAmount:
+          type: integer
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+
+    AllowanceUpdate:
+      type: object
+      properties:
+        coinAmount:
+          type: integer
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        isActive:
+          type: boolean
+
+    # ── Receipt ───────────────────────────────────────────────────────────────
+    Receipt:
+      type: object
+      required: [id, familyId, memberId, merchantName, totalAmount, currency, date, lineItems, createdAt]
+      properties:
+        id:
+          type: integer
+        familyId:
+          type: integer
+        memberId:
+          type: integer
+        merchantName:
+          type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+          default: INR
+        date:
+          type: string
+          format: date
+        imageUrl:
+          type: ["string", "null"]
+        rawText:
+          type: ["string", "null"]
+        lineItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReceiptLineItem"
+        createdAt:
+          type: string
+          format: date-time
+
+    ReceiptLineItem:
+      type: object
+      required: [name, amount, category]
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+        quantity:
+          type: ["number", "null"]
+        category:
+          type: string
+          enum: [groceries, food, transport, utilities, education, entertainment, clothing, health, other]
+
+    ReceiptInput:
+      type: object
+      required: [memberId, imageBase64]
+      properties:
+        memberId:
+          type: integer
+        imageBase64:
+          type: string
+          description: Base64-encoded receipt image
+
+    # ── Insights ──────────────────────────────────────────────────────────────
+    SpendingInsights:
+      type: object
+      required: [familyId, generatedAt, summary, insights, tips]
+      properties:
+        familyId:
+          type: integer
+        generatedAt:
+          type: string
+          format: date-time
+        summary:
+          type: string
+        insights:
+          type: array
+          items:
+            $ref: "#/components/schemas/Insight"
+        tips:
+          type: array
+          items:
+            type: string
+
+    Insight:
+      type: object
+      required: [type, title, description]
+      properties:
+        type:
+          type: string
+          enum: [overspend, saving_opportunity, positive_trend, chore_streak, goal_milestone]
+        title:
+          type: string
+        description:
+          type: string
+        value:
+          type: ["number", "null"]
+        category:
+          type: ["string", "null"]
