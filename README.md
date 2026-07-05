@@ -1,5 +1,6 @@
 # FamCoin — Gamified Family Chores & Money App 🪙
 
+live link: "https://family-coin-keeper--arjun15apps.replit.app"
 A working MVP for the brief: kids earn coins for chores, teens track UPI-style
 spending with streaks and goals, and parents get an approval queue plus
 AI-style spending insights — with **receipt photo scanning that auto-categorizes
